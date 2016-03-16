@@ -54,7 +54,7 @@
 		   
 		<!--- read the config from the database --->
 	    <cfquery datasource="#arguments.site_config.datasource#" name="qConfig">
-	     	select top 1 config from config order by [datetime] desc
+	     	select top 1 config from mrl_siteConfig order by [datetime] desc
 	    </cfquery>
 
 

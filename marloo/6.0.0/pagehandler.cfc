@@ -59,16 +59,15 @@
 
 </cffunction>
 
-<cffunction name="RenderPageByURL">
+<cffunction name="RenderPageByURL" hint="Renders a page by the requested rewrite url">
 	<cfargument name="page_url" type="string" required="true">
 	<cfargument name="site_config" type="struct" required="true">
-	
-	<cfset variables.site_config = arguments.site_config>
 
 	<!--- page_url format "graduate-degrees/" --->
 	
-	<cfset t1 = GetTickCount()>
+	<cfset variables.site_config = arguments.site_config>
 
+	<cfset t1 = GetTickCount()>
 	<cfinvoke component="marloo.core.pageHelper" method="pageUrlToId" returnvariable="page">
 		<cfinvokeargument name="page_url" value="#arguments.page_url#">
 	    <cfinvokeargument name="root_id" value="#variables.site_config.rootId#">
@@ -76,10 +75,13 @@
 		<cfinvokeargument name="useRedirectTable" value="#variables.site_config.useRedirectTable#">       
 	</cfinvoke>
 
+	<!--- if the page exists, put the url into the request scope.
+	pageHelper.getCurrentURL() needs this --->
 	<cfif page.id NEQ ''>
 		<cfset request.URI = arguments.page_url> 	
 	</cfif>
 
+	<!--- if the page exists and it's not a redirect --->
 	<cfif page.id NEQ "" AND page.redirect NEQ true>
 	    <cfinvoke component="marloo.core.pageservice" method="getPageById" returnvariable="pageHTML">
 	        <cfinvokeargument name="page_id" value="#page.id#">
@@ -89,7 +91,6 @@
 	    <cfif pageHTML eq ''>
 			<cfset notFound410()>
 		</cfif>		
-		
 	<cfelseif page.redirect EQ true>
 		<cfinvoke component="marloo.core.pageHelper" method="getQueryString" returnvariable="query_string">
 			<cfinvokeargument name="useRedirectTable" value="true">

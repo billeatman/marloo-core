@@ -5,6 +5,7 @@
 
 <cfset t1 = GetTickCount()>
 
+<!--- initialize the page helper --->
 <cfinvoke component="#baseCFCPath#.core.pageHelper" method="pageUrlToId" returnvariable="page">
 	<cfinvokeargument name="page_url" value="#url.rewriteitem#">
     <cfinvokeargument name="root_id" value="#site_config.rootId#">

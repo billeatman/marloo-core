@@ -107,12 +107,12 @@
                 ,[owner]
                 ,[submittedBy] 
                 ,[SSL]
- 			from siteHistory 
+ 			from mrl_siteHistory 
           	where idHistory = <cfqueryparam cfsqltype="cf_sql_integer" value="#arguments.history_id#">
         </cfquery>
     <cfelse>
         <!--- get the requested page --->
-        <cfstoredproc datasource="#arguments.datasource#" procedure="getPage" result="local.asdf">
+        <cfstoredproc datasource="#arguments.datasource#" procedure="mrl_getPage" result="local.asdf">
           <cfprocparam cfsqltype="cf_sql_integer" value="#arguments.page_id#">
           <cfprocparam cfsqltype="cf_sql_bit" value="#NOT(arguments.admin)#">
           <cfprocresult name="local.qMyPage">
@@ -213,7 +213,7 @@
 	</cfif>
 
 	<!--- get the parent page --->
-	<cfstoredproc datasource="#variables.DataSource#" procedure="getPage">
+	<cfstoredproc datasource="#variables.DataSource#" procedure="mrl_getPage">
 		<cfprocparam cfsqltype="cf_sql_integer" value="#variables.qPage.idParent#">
 	   	<cfprocresult name="variables.qParent">
 	</cfstoredproc>
@@ -366,18 +366,18 @@
 		with c 
 		as 
 		( 
-			select id, idparent, menu, url, (0) as level, visible, deleted FROM siteAdmin 
+			select id, idparent, menu, url, (0) as level, visible, deleted FROM mrl_siteAdmin 
 			where id = <cfqueryparam cfsqltype="cf_sql_integer" value="#variables.page_id#"> 
 			
 			union all 
 			
-			select b.id, b.idparent, b.menu, b.url, c.level + 1, b.visible, b.deleted FROM siteAdmin b
+			select b.id, b.idparent, b.menu, b.url, c.level + 1, b.visible, b.deleted FROM mrl_siteAdmin b
 			join c on c.idparent = b.id
 			where (b.id != '0' and b.id is not null)
 		) 
 	
 		select top(1) d.id, d.idparent, [level], d.title, d.id from c
-		join siteAdmin d on d.idparent = c.id
+		join mrl_siteAdmin d on d.idparent = c.id
 		where d.deleted <> 'T' and title = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.title#">
 		order by level asc
 	</cfquery> 
@@ -501,7 +501,7 @@
 <cffunction name="isOrphan" access="public" returnType="boolean" output="false">
 	<!---
 	<cfquery datasource="#variables.datasource#" name="local.qOrphan">
-		select id from sitePublic
+		select id from mrl_sitePublic
 		where id = <cfqueryparam cfsqltype="cf_sql_varchar" value="#getPage().idParent#">
 	</cfquery>
 

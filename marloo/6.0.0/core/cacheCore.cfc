@@ -50,7 +50,7 @@ Author: William eatman
 		
         <!--- delete any old hash (We don't want duplicates!) --->
         <cfquery datasource="#variables.datasource#">
-        	delete from dataCache where
+        	delete from mrl_dataCache where
             id = <cfqueryparam cfsqltype="cf_sql_integer" value="#arguments.id#">
             and hash = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.hash#">
             and caller = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.caller#">
@@ -58,7 +58,7 @@ Author: William eatman
         
         <!--- Insert the new hash --->
         <cfquery datasource="#variables.datasource#">
-            insert into dataCache(hash, id, dateTime, cacheData, caller, isString)
+            insert into mrl_dataCache(hash, id, dateTime, cacheData, caller, isString)
             values (<cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.hash#">
                 , <cfqueryparam cfsqltype="cf_sql_integer" value="#arguments.id#">
                 , <cfqueryparam cfsqltype="cf_sql_timestamp" value="#now()#">
@@ -86,7 +86,7 @@ Author: William eatman
         <cfset var qDate = "">
 
         <cfquery datasource="#variables.datasource#" name="qDate">
-            select top 1 dateTime from dataCache
+            select top 1 dateTime from mrl_dataCache
             where id = <cfqueryparam cfsqltype="cf_sql_numeric" value="#arguments.id#"> 
             and hash = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.hash#">
             and caller = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.caller#">
@@ -118,7 +118,7 @@ Author: William eatman
 
         <cfif cacheData.found NEQ true>           
             <cfquery datasource="#variables.datasource#" name="myHash">
-            	select top 1 cacheData, isString from dataCache
+            	select top 1 cacheData, isString from mrl_dataCache
                 where id = <cfqueryparam cfsqltype="cf_sql_numeric" value="#arguments.id#"> 
                 and hash = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.hash#">
                 and caller = <cfqueryparam cfsqltype="cf_sql_varchar" value="#arguments.caller#">
@@ -162,14 +162,14 @@ Author: William eatman
 	<cffunction name="clearCacheByDate" hint="Clears cache older than passed date" access="public" returntype="boolean">
     	<cfargument name="Date" hint="Date/time object" required="true" type="date">
         <cfquery datasource="#variables.datasource#">
-        	delete from dataCache where dateTime > <cfqueryparam cfsqltype="cf_sql_timestamp" value="#arguments.date#">
+        	delete from mrl_dataCache where dateTime > <cfqueryparam cfsqltype="cf_sql_timestamp" value="#arguments.date#">
         </cfquery> 
         <cfreturn true>
     </cffunction>
 
 	<cffunction name="clearCacheAll" hint="Clears all cache" access="public" returntype="boolean">
     	<cfquery datasource="#variables.datasource#">
-        	delete from dataCache
+        	delete from mrl_dataCache
         </cfquery>
     	<cfreturn true>
     </cffunction> 
@@ -177,7 +177,7 @@ Author: William eatman
 	<cffunction name="clearCacheById" hint="Clears cache by numeric identifier" access="public" returntype="boolean">
     	<cfargument name="id" hint="Numeric identifier" required="true" type="numeric"> 
         <cfquery datasource="#variables.datasource#">
-        	delete from dataCache where id = <cfqueryparam cfsqltype="cf_sql_numeric" value="#arguments.pageId#">
+        	delete from mrl_dataCache where id = <cfqueryparam cfsqltype="cf_sql_numeric" value="#arguments.pageId#">
         </cfquery>
         <cfreturn true>
     </cffunction>
@@ -185,7 +185,7 @@ Author: William eatman
 	<cffunction name="clearCacheByCaller" hint="Clears cache by caller" access="public" returntype="boolean">
     	<cfargument name="caller" hint="Caller identifier" required="true" type="string"> 
         <cfquery datasource="#variables.datasource#">
-        	delete from dataCache where caller = <cfqueryparam cfsqltype="cf_sql_numeric" value="#arguments.caller#">
+        	delete from mrl_dataCache where caller = <cfqueryparam cfsqltype="cf_sql_numeric" value="#arguments.caller#">
         </cfquery>
         <cfreturn true>
     </cffunction>

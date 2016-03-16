@@ -92,7 +92,7 @@
 	<!--- Add the error to the log --->
 	<!---
 	<cfquery datasource="#site_config.datasource#">
-		insert into errorLog (datetime, message, detail, error, cgi, hash)
+		insert into mrl_errorLog (datetime, message, detail, error, cgi, hash)
 		values (
 			<cfqueryparam cfsqltype="cf_sql_timestamp"value="#now()#">
 			,<cfqueryparam cfsqltype="cf_sql_varchar" value="#except.message#">

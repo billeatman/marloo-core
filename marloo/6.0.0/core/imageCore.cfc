@@ -172,7 +172,7 @@
         <cfset myHash = Hash(imageChain & imagePath & quality & revKey, 'md5')>       
 
         <cfquery datasource="#variables.datasource#" name="qiCache">
-            select count(hash) as [hit] from iCache where [hash] = <cfqueryparam cfsqltype="cf_sql_varchar" value="#myHash#"> 
+            select count(hash) as [hit] from mrl_imageCache where [hash] = <cfqueryparam cfsqltype="cf_sql_varchar" value="#myHash#"> 
         </cfquery>
 
         <cfset webPath = '#webGroup#iCache/#myHash#.jpg'>
@@ -188,7 +188,7 @@
 
             <!--- check again after lock to see if the data is now there --->
             <cfquery datasource="#variables.datasource#" name="qiCache">
-                select count(hash) as [hit] from iCache where [hash] = <cfqueryparam cfsqltype="cf_sql_varchar" value="#myHash#"> 
+                select count(hash) as [hit] from mrl_imageCache where [hash] = <cfqueryparam cfsqltype="cf_sql_varchar" value="#myHash#"> 
             </cfquery>
                 
             <cfif qiCache.hit gt 0>

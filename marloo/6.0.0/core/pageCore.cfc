@@ -27,6 +27,7 @@
               ,[modifiedBy]
               ,[createdDate]
               ,[createdBy]
+              ,[category]
               ,[deleted]
               ,[locked]
               ,[lockedBy]
@@ -44,7 +45,7 @@
               ,[sortIndex]
               ,[menu]
               ,[template]
-              ,[url] from siteHistory
+              ,[url] from mrl_siteHistory
             where id = <cfqueryparam cfsqltype="cf_sql_integer" value="#arguments.page_id#"> and state != 'preview'
             order by usedDate desc
         </cfquery>
@@ -255,7 +256,7 @@
         <cfargument name="datasource" required="false" type="string" default="#variables.datasource#">
             <cfquery datasource="#arguments.datasource#" name="qIdHistory">
                 select idHistory 
-                from siteAdmin 
+                from mrl_siteAdmin 
                 where id = <cfqueryparam cfsqltype="cf_sql_numeric" value="#arguments.pageId#">
             </cfquery>
             
@@ -281,7 +282,7 @@
         <cfelse>
             <cfquery datasource="#variables.datasource#" name="qPageInfo">
                 select info 
-                from siteHistory 
+                from mrl_siteHistory 
                 where idHistory = <cfqueryparam cfsqltype="cf_sql_numeric" value="#arguments.historyId#">
             </cfquery>
         </cfif>

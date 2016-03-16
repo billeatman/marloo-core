@@ -36,6 +36,123 @@
 	<cfreturn this>
 </cffunction>
 
+<cffunction name="SEOUrlsToId" output="false">
+	<cfargument name="pageHTML" type="string" required="true">
+	<cfargument name="site_config" type="struct" required="false" default="variables.site_config">
+	<cfargument name="datasource" type="string" required="false" default="variables.datasource">
+
+	<cfset var changed = false>
+
+	<!--- find all page ids --->
+    <cfset var found = 1>
+    <cfset var stripPast = 0>
+    <cfset var mychar = "">
+    <cfset var myid = "">
+    <cfset var myurl = "">
+    <cfset var myhtml = arguments.pagehtml>
+    <cfset var quoteChar = "">
+
+    <cfloop condition="found GT 0">
+        <cfset stripPast = found + 1>
+        <cfset found = findnocase('href=', myHTML, stripPast)> 
+        
+        <cfif found EQ 0>
+        	<cfbreak>
+       	</cfif>
+
+       	<!--- get the quote used, could be single or double --->
+       	<cfset quoteChar = mid(myHTML, found + 5, 1)>
+
+        <cfset found = found + 6>
+
+        <!--- ignore urls in the correct format --->
+       	<cfif lcase(mid(myHTML, found, 8)) EQ 'page.cfm'>
+	       	<cfcontinue>
+       	</cfif>
+
+        <!--- ignore non-relative links --->
+       	<cfif lcase(mid(myHTML, found, 4)) EQ 'http'>
+	       	<cfcontinue>
+       	</cfif>
+
+        <!--- ignore mailto --->
+       	<cfif lcase(mid(myHTML, found, 6)) EQ 'mailto'>
+	       	<cfcontinue>
+       	</cfif>
+
+       	<!--- ignore non-relative urls --->
+       	<cfif lcase(mid(myHTML, found, 2)) EQ '//'>
+	       	<cfcontinue>
+       	</cfif>
+
+       	<!--- ignore # urls --->
+       	<cfif lcase(mid(myHTML, found, 1)) EQ '##'>
+	       	<cfcontinue>
+       	</cfif>
+
+		<!--- find the closing quote --->
+		<cfset foundend = find(quoteChar, myHTML, found)>
+		<cfset myurl = getToken(mid(myHTML, found, foundend - found), 1, '##')>
+		<cfset query = getToken(myurl, 2, '?')>
+		<cfset path = getToken(myurl, 1, '?')>
+
+		<!--- fix path if it does not contain a trailing / --->
+		<cfif right(path, 1) NEQ '/'>
+			<cfset path = path & '/'>
+		</cfif>
+
+		<cfset fragment = getToken(mid(myHTML, found, foundend - found), 2, '##')>
+
+		<cfset oldUrl = mid(myHTML, found - 6, foundend + 1 - (found - 6))>
+
+<!---
+        <cfdump var="#path#" label="path">
+        <cfdump var="#query#" label="query">
+        <cfdump var="#fragment#" label="fragment">
+--->
+<!---
+        <cfinvoke component="marloo.core.pageHelper" method="pageUrlToId" returnvariable="mypage">
+        	<cfinvokeargument name="page_url" value="#path#">
+	        <cfinvokeargument name="root_id" value="#application.site_config.cms.tree.rootid#">
+		    <cfinvokeargument name="datasource" value="#application.datasource#">
+			<cfinvokeargument name="userRedirectTable" value="true">
+		</cfinvoke>
+--->
+		<cfset mypage = pageUrlToId(page_url: path, root_id: arguments.site_config.cms.tree.rootid, datasource: arguments.datasource, useRedirectTable: true)>
+
+		<cfif NOT isNumeric(mypage.id)>
+			<cfcontinue>
+		</cfif>
+
+		<!--- put the new url back together --->			
+		<cfset newUrl = "page.cfm?page_id=#mypage.id#">
+
+		<cfif query NEQ "">
+			<cfset newUrl = newUrl & '&' & query> 
+		</cfif>
+
+		<cfif fragment NEQ "">
+			<cfset newUrl = newUrl & '##' & fragment>
+		</cfif>
+
+		<cfset newUrl = 'href="' & newURL & '"'>
+
+		<!--- replace the old url in the html --->
+		<cfset changed = true>
+		<cfset myHTML = replace(myhtml, oldUrl, newUrl, 'all')>
+<!---
+		<cfdump var="#oldUrl# -> #newUrl#"><br />
+--->
+        <cfset found = found + 1>      
+    </cfloop>
+
+    <cfif changed EQ true>
+	    <cfreturn myHTML>    
+    </cfif>
+
+    <cfreturn arguments.pageHTML>
+</cffunction> 
+
 <cffunction name="webToFilePath" access="public" output="false" returntype="struct">
 	<cfargument name="src" type="string" required="true">
 	<cfargument name="site_config" type="struct" required="false" default="#variables.site_config#">
@@ -75,7 +192,7 @@
 	<cfargument name="useAlphaorder" type="boolean" required="false" default="false">
 	<cfargument name="summary" required="false" type="boolean" default="true" > 
 
-   	<cfstoredproc datasource="#arguments.datasource#" procedure="getChildren">
+   	<cfstoredproc datasource="#arguments.datasource#" procedure="mrl_getChildren">
 		 <cfprocparam cfsqltype="cf_sql_integer" value="#arguments.page_id#">
 		 <cfprocparam cfsqltype="cf_sql_bit" value="#arguments.summary#">
 		 <cfprocparam cfsqltype="cf_sql_bit" value="true">
@@ -114,7 +231,7 @@
 	<cfargument name="useAlphaorder" type="boolean" required="false" default="false">
 
 	<!--- get the peer pages --->
-	<cfstoredproc datasource="#arguments.datasource#" procedure="getPeers">
+	<cfstoredproc datasource="#arguments.datasource#" procedure="mrl_getPeers">
 	  	<cfprocparam cfsqltype="cf_sql_integer" value="#arguments.page_id#">
 	  	<cfprocparam cfsqltype="cf_sql_bit" value="#true#">
       	<cfprocparam cfsqltype="cf_sql_bit" value="#true#">           
@@ -254,7 +371,7 @@
 		<cfset my_url.port = cgi.SERVER_PORT>
 		
 		<!--- Path --->
-		<!--- The request.uri var is set in rewrite.cfm by the url rewriter --->
+		<!--- The request.uri var is set in handler.cfm by the url rewriter --->
 		<cfif isDefined('request.uri') AND request.uri NEQ ''>
 			<cfset my_url.path = request.uri>	
 		<cfelse>
@@ -358,21 +475,23 @@
 	<cfset retVal.redirectUrl = ''>
 	<cfset retVal.redirectId = ''>
 
+	<!--- Use redirect table for fast lookups --->
     <cfif useRedirectTable eq true>
 		<cfquery datasource="#arguments.datasource#" name="qRedirects">
-			select id, redirect, redirectId from redirectsMaster
+			select id, redirect, redirectId from mrl_redirect
 			where md5 = <cfqueryparam cfsqltype="cf_sql_varchar" value="#hash(arguments.page_url, 'md5')#">
 		</cfquery>
 
+		<!--- Bail out if no record exists, return '' --->
 		<cfif qredirects.RecordCount EQ 0>
-			<!--- No record exists, return '' --->
 			<cfreturn retVal>
 		</cfif>
 	
+		<!--- Check if this is a non-redirect page --->
 		<cfif qRedirects.redirect EQ ''>
-			<!--- an active id maps to the requested url --->
 			<cfset retVal.id = qRedirects.id>
 			<cfset retVal.redirect = false>
+		<!--- if the page is a redirect, check that the page is public first --->
 		<cfelseif isPublicId(page_id: qRedirects.redirectId, datasource: arguments.datasource)>
 			<!--- a redirect exists for the requested url --->
 			<cfset retVal.id = qRedirects.id>
@@ -401,7 +520,7 @@
 	    <!--- Loop through the bread crumbs to resolve the page id --->
 	    <cfloop array="#bread#" index="i"> 
 
-	        <cfstoredproc datasource="#arguments.datasource#" procedure="getChildren">
+	        <cfstoredproc datasource="#arguments.datasource#" procedure="mrl_getChildren">
 	            <cfprocparam dbvarname="@id" cfsqltype="cf_sql_integer" value="#id#">
 	            <cfprocparam dbvarname="@summary" cfsqltype="cf_sql_bit" value="0">
 	            <cfprocresult name="qChildren">
@@ -453,7 +572,7 @@
 	
 	<cfquery datasource="#arguments.datasource#" name="qPage">
 		select count(*) as [count]
-		from sitePublic
+		from mrl_sitePublic
 		where id = <cfqueryparam cfsqltype="cf_sql_integer" value="#arguments.page_id#">
 	</cfquery>
 	
@@ -492,7 +611,7 @@
 	<cfif arguments.useRedirectTable EQ true>
 		<cfquery datasource="#arguments.datasource#" name="qRedirect" cachedwithin="#createTimeSpan(0,0,1,0)#">
 			select top 1 url, redirect
-			from redirectsMaster
+			from mrl_redirect
 			where id = <cfqueryparam cfsqltype="cf_sql_integer" value="#arguments.page_id#">
 			order by usedDate desc
 		</cfquery>
@@ -570,7 +689,7 @@
 		<cfif limit NEQ 0>
 			top #int(arguments.limit)#
 		</cfif> 
-		id, title from sitePublic
+		id, title from mrl_sitePublic
 		order by sortIndex
 	</cfquery>
 	
@@ -602,18 +721,18 @@
 	    <cfset LOCAL.timeSpan = createTimeSpan(0,0,0,0)>	    
     </cfif>
 
-	<!--- get breadcrumbs from siteAdmin --->
+	<!--- get breadcrumbs from mrl_siteAdmin --->
     <cfquery datasource="#arguments.datasource#" name="LOCAL.qBreadAdmin" cachedwithin="#local.timeSpan#">
 	WITH PagesList (id, idparent, menu, url, level, visible, deleted)
 		AS
 		(
 			-- Anchor member definition
-			SELECT id, idparent, menu, url,(0) as level, visible, deleted FROM siteAdmin 
+			SELECT id, idparent, menu, url,(0) as level, visible, deleted FROM mrl_siteAdmin 
             WHERE id=<cfqueryparam cfsqltype="cf_sql_integer" value="#arguments.page_id#">
 			UNION ALL
 
 			-- Recursive member definition
-			SELECT c.id, c.idparent, c.menu, c.url, p.level + 1, c.visible, c.deleted From siteAdmin as c
+			SELECT c.id, c.idparent, c.menu, c.url, p.level + 1, c.visible, c.deleted From mrl_siteAdmin as c
 			INNER JOIN PagesList as p
 			ON c.id = p.idparent
 			<cfif arguments.root_id NEQ -1>
@@ -688,12 +807,52 @@
 	<cfargument name="page_id" type="numeric" required="true" hint="page_id">
 
  	<cfquery datasource="#application.datasource#" name="LOCAL.qtemplate">
-        select [template], tinyMCEStyleSheet from globalMaster
-        join templates on templates.cfcname = globalMaster.template
+        select [template], tinyMCEStyleSheet from mrl_page
+        join mrl_template on mrl_template.cfcname = mrl_page.template
         where id = <cfqueryparam cfsqltype="cf_sql_integer" value="#arguments.page_id#">
     </cfquery>
 
     <cfreturn LOCAL.qtemplate>
+</cffunction>
+
+<!---  add to pageHelper and incorporate into webtofilepath --->
+<!--- Get the path from a url http://www.example.com/asdf 
+ 		to asdf/
+--->
+<cffunction name="getPath" access="public">
+    <cfargument name="url" required="true" type="string">
+    <cfset local.pos1 = mid(arguments.url, 1, find("//", arguments.url))>
+    <cfset local.pos1 = len(local.pos1) + 2>
+    <cfset local.pos2 = find("/", arguments.url, local.pos1)>
+    <cfset local.groupPath = mid(arguments.url, local.pos2 + 1, len(arguments.url) - local.pos2)>
+    <cfreturn local.groupPath>
+</cffunction>
+
+<!--- add to pageHelper and incorporate into changeURLStoSEO --->
+<cffunction name="getPageIdFromURL" access="public" returntype="numeric" output="false">
+	<cfargument name="url" type="string" required="true">
+
+	<cfset var found = 1>
+	<cfset var mychar = "">
+	<cfset var myid = -1>
+	<cfset var myHTML = "">
+	
+	<cfset found = findnocase('page.cfm?page_id=', arguments.url)>     
+
+    <cfif found NEQ 0>
+        <cfset mychar = found + 17>
+
+        <!--- get ID --->
+        <cfloop condition="isNumeric(mid(arguments.url, mychar, 1)) EQ true">
+			<cfset mychar = mychar + 1>
+        </cfloop>
+            
+        <cfset myid = mid(arguments.url, found + 17, mychar - (found + 17))>	
+    <cfelse>
+    	<cfreturn -1>
+    </cfif>
+
+    <cfreturn myid> 
 </cffunction>
 
 </cfcomponent>
